@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,19 +29,28 @@ func TestFunctionalE2E(t *testing.T) {
 			URL: "https://linkedin.com/in/hemant-pandey-hx",
 		},
 		{
-			URL: "https://www.linkedin.com/company/infracloudio/",
+			URL: "https://linkedin.com/company/infracloudio/",
 		},
 		{
-			URL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+			URL: "https://linkedin.com/feed/",
 		},
 		{
-			URL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+			URL: "https://youtube.com/watch?v=dQw4w9WgXcQ",
 		},
 		{
-			URL: "https://www.youtube.com/watch?v=kPaJfAUwViY",
+			URL: "https://youtube.com/watch?v=dQw4w9WgXcQ",
 		},
 		{
-			URL: "https://www.youtube.com/watch?v=LcWoP6KtZKw",
+			URL: "https://youtube.com/watch?v=kPaJfAUwViY",
+		},
+		{
+			URL: "https://youtube.com/watch?v=LcWoP6KtZKw",
+		},
+		{
+			URL: "https://gobyexample.com/for",
+		},
+		{
+			URL: "https://github.com/gin-gonic/gin/tree/master/docs",
 		},
 	}
 	testcases := []testcase{
@@ -73,6 +83,7 @@ func TestFunctionalE2E(t *testing.T) {
 			name: "Call to shorten multiple times, then check metrics",
 			run: func(t *testing.T) {
 				r := setupRouter()
+				clearRunningMetrics()
 				for _, testJson := range testJSONMultiple {
 					w := httptest.NewRecorder()
 					body, _ := json.Marshal(testJson)
@@ -84,11 +95,15 @@ func TestFunctionalE2E(t *testing.T) {
 				w := httptest.NewRecorder()
 				req, _ := http.NewRequest("GET", "/metrics", nil)
 				r.ServeHTTP(w, req)
-				assert.Equal(t, w.Body.String(), "youtube.com: 4\nlinkedin.com: 2\ngithub.com: 1\n")
+				assert.Equal(t, "youtube.com: 4\nlinkedin.com: 3\ngithub.com: 2\n", w.Body.String())
 			},
 		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, tc.run)
 	}
+}
+
+func clearRunningMetrics() {
+	metrics = sync.Map{}
 }
