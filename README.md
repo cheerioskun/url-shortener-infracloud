@@ -20,3 +20,5 @@ The API can look something like:
 - GET /long/{shortURL} - Takes in the short URL in the query path. Returns a single string: a valid URL to redirect to.
 - GET /metrics - Returns the top 3 shortened domain names.
 
+### Framework
+We'll be using Gin for the REST API.
