@@ -13,10 +13,10 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
-const ServerListenAddr = "localhost:3000"
+const ServerListenAddr = "http://localhost:3000"
 
 var db sync.Map
-var metrics map[string]*atomic.Int64 = make(map[string]*atomic.Int64)
+var metrics sync.Map
 
 func main() {
 	r := setupRouter()
@@ -25,11 +25,9 @@ func main() {
 
 func setupRouter() *gin.Engine {
 	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
+	r.POST("/short", ShortHandler)
+	r.GET("/long/:blurb", LongHandler)
+
 	return r
 }
 
@@ -74,10 +72,29 @@ func ShortHandler(c *gin.Context) {
 
 	// Triggering an async routine, there is no chance of this getting stuck in a deadlock,
 	// So no need to wrap a context and timeout. This should not cause goroutine leak.
-	go metrics[longURL.Host].Add(1)
-
+	go IncrementCounter(&metrics, longURL.Host)
 }
 
 func LongHandler(c *gin.Context) {
 	// Check for valid shortURL
+	blurb := c.Param("blurb")
+	if val, ok := db.Load(blurb); ok {
+		c.Header("Location", val.(string))
+		c.Status(http.StatusTemporaryRedirect)
+		slog.Info("found short to long mapping", "short", blurb, "long", val.(string))
+		return
+	}
+	slog.Info("not found short to long mapping", "short", blurb)
+	c.AbortWithStatus(http.StatusNotFound)
+}
+
+func MetricsHandler(c *gin.Context) {
+	// Simple for now, just flatten the map then sort
+
+}
+
+func IncrementCounter(counters *sync.Map, key string) {
+	val, _ := counters.LoadOrStore(key, new(int64))
+	ptr := val.(*int64)
+	atomic.AddInt64(ptr, 1)
 }

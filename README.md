@@ -17,7 +17,7 @@ We will keep it super simple.
 
 The API can look something like: 
 - POST /short - Takes in a body with URL as parameter. Returns a single string back: a valid shortened URL.
-- GET /long/{shortURL} - Takes in the short URL in the query path. Returns a single string: a valid URL to redirect to.
+- GET /long/{blurb} - Takes in the blurb/encodedString in the query path. Returns a redirect code and the correctly set Location header.
 - GET /metrics - Returns the top 3 shortened domain names.
 
 ### Framework
