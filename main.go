@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const ServerListenAddr = "localhost:3000"
+const ServerListenAddr = "0.0.0.0:3000"
 
 var db sync.Map
 var metrics sync.Map

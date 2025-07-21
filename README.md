@@ -25,6 +25,11 @@ The server can be run from source using go > 1.23
 <
 * Connection #0 to host localhost left intact
 ```
+You can also run it as a container
+```bash
+docker run -p 3000:3000 cheerioskun/shortener:stripped
+```
+
 
 ## Task and Requirements
 The task at hand is to create an API with the functionality of shortening long URLs into small shareable links which redirect to the orginal.
