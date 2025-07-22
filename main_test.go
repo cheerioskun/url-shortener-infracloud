@@ -98,6 +98,32 @@ func TestFunctionalE2E(t *testing.T) {
 				assert.Equal(t, "youtube.com: 4\nlinkedin.com: 3\ngithub.com: 2\n", w.Body.String())
 			},
 		},
+		{
+			name: "Call to shorten twice for same URL, should return same shortening",
+			run: func(t *testing.T) {
+
+				r := setupRouter()
+				w := httptest.NewRecorder()
+				body, _ := json.Marshal(testJSONSingle)
+				req, _ := http.NewRequest("POST", "/short", bytes.NewReader(body))
+				r.ServeHTTP(w, req)
+
+				assert.Equal(t, w.Code, http.StatusOK)
+				resp1 := &ShortResponse{}
+				err := json.Unmarshal(w.Body.Bytes(), resp1)
+				assert.NoError(t, err)
+
+				w = httptest.NewRecorder()
+				req, _ = http.NewRequest("POST", "/short", bytes.NewReader(body))
+				r.ServeHTTP(w, req)
+				assert.Equal(t, w.Code, http.StatusOK)
+				resp2 := &ShortResponse{}
+				err = json.Unmarshal(w.Body.Bytes(), resp2)
+				assert.NoError(t, err)
+
+				assert.Equal(t, resp1.URL, resp2.URL)
+			},
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, tc.run)

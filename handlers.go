@@ -14,6 +14,11 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
+var db sync.Map
+var metrics sync.Map
+
+const ShortenedLen = 10 // Length of the blurb
+
 type ShortRequest struct {
 	URL string `json:"URL"`
 }
@@ -22,6 +27,11 @@ type ShortResponse struct {
 	URL string `json:"URL"`
 }
 
+// Handler for POST /short
+// Args:
+// - URL string (required) - Long URL to be shortened
+// Returns:
+// - URL string - Complete shortened URL redirecting to the long input
 func ShortHandler(c *gin.Context) {
 	var req ShortRequest
 	if err := c.BindJSON(&req); err != nil {
@@ -41,7 +51,7 @@ func ShortHandler(c *gin.Context) {
 	hasher, _ := blake2b.New256([]byte("Hey InfraCloud!"))
 	_, _ = hasher.Write([]byte(req.URL))
 	hash := hasher.Sum(nil)
-	encodedStr := base64.URLEncoding.EncodeToString(hash)
+	encodedStr := base64.URLEncoding.EncodeToString(hash)[:ShortenedLen]
 
 	// Form new URL
 	newURL := fmt.Sprintf("http://%s/long/%s", ServerListenAddr, encodedStr)
@@ -53,11 +63,12 @@ func ShortHandler(c *gin.Context) {
 		URL: newURL,
 	})
 
-	// Triggering an async routine, there is no chance of this getting stuck in a deadlock,
-	// So no need to wrap a context and timeout. This should not cause goroutine leak.
 	IncrementCounter(&metrics, longURL.Host)
 }
 
+// Handler for GET /long/:blurb
+// Accepts a URL shortened with the same service and redirects to the
+// original mapping by returning a 3xx HTTP Status with Location header.
 func LongHandler(c *gin.Context) {
 	// Check for valid shortURL
 	blurb := c.Param("blurb")
@@ -71,6 +82,8 @@ func LongHandler(c *gin.Context) {
 	c.AbortWithStatus(http.StatusNotFound)
 }
 
+// Handler for GET /metrics
+// Returns the top 3 shortened domains
 func MetricsHandler(c *gin.Context) {
 	// Simple for now, just flatten the map then sort
 	type Entry struct {
@@ -94,6 +107,8 @@ func MetricsHandler(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+// IncrementCounter is a utility function to concurrent-safely update
+// atomic counters in a sync.Map. This is used for metrics accounting.
 func IncrementCounter(counters *sync.Map, key string) {
 	val, _ := counters.LoadOrStore(key, new(atomic.Int64))
 	ptr := val.(*atomic.Int64)
