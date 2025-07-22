@@ -54,3 +54,9 @@ The API can look something like:
 ### Framework
 We'll be using Gin for the REST API.
 
+### Side Note on Collision Risk
+Since we are mapping from an infinite domain of strings to only a 5 character blurb, it is important to analyse the collision risk between two shortened URLs.
+Considering our hash function a perfect hash function, i.e. it uniformly distributes from our biased domain to the range of 256 bits (64 bytes), our problem reduces to considering
+the set of all possible 5 character combinations in base64. This is simply 64^5, about 10^9. 
+Referring to the [birthday problem](https://betterexplained.com/articles/understanding-the-birthday-paradox/), this means that we can add about sqrt(10^9) => 30,000 keys before
+the probability of a collision is 50%. This seems like a good enough number, which we can easily change later, or implement a TTL to flush out our existing keys.

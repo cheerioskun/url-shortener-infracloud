@@ -17,7 +17,7 @@ import (
 var db sync.Map
 var metrics sync.Map
 
-const ShortenedLen = 10 // Length of the blurb
+const ShortenedLen = 5 // Length of the blurb
 
 type ShortRequest struct {
 	URL string `json:"URL"`
